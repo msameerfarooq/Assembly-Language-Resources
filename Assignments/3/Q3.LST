@@ -1,0 +1,237 @@
+     1                                  				[org 0x0100]
+     2 00000000 E9EE00                  				jmp start
+     3                                  
+     4                                   clrscr:
+     5 00000003 06                      				push es
+     6 00000004 50                      				push ax
+     7 00000005 57                      				push di
+     8                                  				
+     9 00000006 B800B8                  				mov ax, 0xb800
+    10 00000009 8EC0                    				mov es, ax ; point es to video base
+    11 0000000B BF0000                  				mov di, 0 ; point di to top left column
+    12                                  
+    13                                  		nextloc:
+    14 0000000E 26C7052007              				mov word [es:di], 0x0720 ; clear next char on screen
+    15 00000013 81C70200                				add di, 2 ; move to next screen location
+    16 00000017 81FFA00F                				cmp di, 4000 ; has the whole screen cleared
+    17 0000001B 75F1                    				jne nextloc ; if no clear next position
+    18 0000001D 5F                      				pop di
+    19 0000001E 58                      				pop ax
+    20 0000001F 07                      				pop es
+    21 00000020 C3                      				ret
+    22                                  				
+    23                                   print_triangle: ; this function takes length, color and takes x an y component where user wants to print 
+    24 00000021 55                      				push bp
+    25 00000022 89E5                    				mov bp,sp
+    26 00000024 60                      				pusha
+    27 00000025 06                      				push es
+    28 00000026 B800B8                  				mov ax,0xB800
+    29 00000029 8EC0                    				mov es,ax
+    30 0000002B 8B4E04                  				mov cx,[bp+4]	; length of triangle
+    31 0000002E 8B460A                  				mov ax,[bp+10]	; character		+   	attribute , colour
+    32 00000031 8B5E06                  				mov bx,[bp+6]	; column number
+    33 00000034 8B7608                  				mov si,[bp+8]	; row number
+    34                                  				
+    35 00000037 D1E1                    				shl cx,1
+    36                                  		Loop1:	
+    37 00000039 51                      				push cx
+    38 0000003A D1E9                    				shr cx,1
+    39 0000003C 720A                    				jc SecondLine
+    40                                  				
+    41                                  		FirstLine:
+    42 0000003E 89CF                    				mov di,cx
+    43 00000040 2B7E04                  				sub di,[bp+4]
+    44 00000043 01DF                    				add di,bx
+    45 00000045 E90B00                  				jmp Print
+    46                                  				
+    47                                  		SecondLine:
+    48 00000048 8B7E04                  				mov di,[bp+4]
+    49 0000004B 29CF                    				sub di,cx
+    50 0000004D 01DF                    				add di,bx
+    51 0000004F 81C60100                				add si,1
+    52                                  		Print:		
+    53                                  				
+    54 00000053 59                      				pop cx
+    55 00000054 680000                  				push 0
+    56 00000057 56                      				push si
+    57 00000058 57                      				push di
+    58 00000059 E83600                  				call Calculate_Location
+    59 0000005C 5F                      				pop di
+    60 0000005D 268905                  				mov [es:di],ax
+    61                                  				
+    62 00000060 49                      				dec cx
+    63 00000061 81F90100                				cmp cx,1
+    64 00000065 75D2                    				jne Loop1
+    65                                  				
+    66 00000067 89DF                    				mov di,bx
+    67 00000069 2B7E04                  				sub di,[bp+4]
+    68                                  								
+    69 0000006C 680000                  				push 0
+    70 0000006F 56                      				push si
+    71 00000070 57                      				push di
+    72 00000071 E81E00                  				call Calculate_Location
+    73 00000074 5F                      				pop di
+    74                                  				
+    75 00000075 88E6                    				mov dh,ah
+    76 00000077 B220                    				mov dl,0x20		; space
+    77 00000079 8B4E04                  				mov cx,[bp+4]	; reset the cx to the length of triangle
+    78                                  				
+    79                                  		Loop3:	
+    80 0000007C 81C70200                				add di,2
+    81 00000080 268905                  				mov [es:di],ax
+    82 00000083 81C70200                				add di,2	
+    83 00000087 268915                  				mov [es:di],dx
+    84                                  			
+    85 0000008A E2F0                    				loop Loop3	
+    86 0000008C 07                      				pop es				
+    87 0000008D 61                      				popa
+    88 0000008E 5D                      				pop bp
+    89 0000008F C20800                  				ret 8	; because it have to return nothing
+    90                                  								
+    91                                   Calculate_Location:	; this function takes row and column number and return the location
+    92 00000092 55                      				push bp
+    93 00000093 89E5                    				mov bp,sp
+    94 00000095 60                      				pusha
+    95                                  				
+    96 00000096 B85000                  				mov ax,80
+    97 00000099 8B5E06                  				mov bx,[bp+6] ; row number
+    98 0000009C F7E3                    				mul bx
+    99 0000009E 034604                  				add ax,[bp+4]
+   100 000000A1 01C0                    				add ax,ax
+   101 000000A3 894608                  				mov [bp+8],ax
+   102                                  				;location = ( hypos * 80 + epos ) * 2
+   103 000000A6 61                      				popa
+   104 000000A7 5D                      				pop bp
+   105 000000A8 C20400                  				ret 4
+   106                                  				
+   107                                   delay:
+   108 000000AB 55                      				push bp
+   109 000000AC 89E5                    				mov bp,sp
+   110 000000AE 60                      				pusha
+   111 000000AF 9C                      				pushf
+   112 000000B0 8B4E04                  				mov cx,[bp+4]
+   113                                  		mydelay:
+   114 000000B3 8B5E04                  				mov bx,[bp+4]      ;; increase this number if you want to add more delay, and decrease this number if you want to reduce delay.
+   115                                  		mydelay1:
+   116 000000B6 4B                      				dec bx
+   117 000000B7 75FD                    				jnz mydelay1
+   118 000000B9 E2F8                    				loop mydelay
+   119 000000BB 9D                      				popf
+   120 000000BC 61                      				popa
+   121 000000BD 5D                      				pop bp
+   122 000000BE C20200                  				ret 2
+   123                                  
+   124                                   printstr: 		
+   125 000000C1 55                      				push bp
+   126 000000C2 89E5                    				mov bp, sp
+   127 000000C4 06                      				push es
+   128 000000C5 60                      				pusha
+   129                                  
+   130 000000C6 B800B8                  				mov ax, 0xb800
+   131 000000C9 8EC0                    				mov es, ax ; point es to video base
+   132                                  		
+   133 000000CB 8A6608                  				mov ah,byte[bp+8]
+   134 000000CE 8B7E06                  				mov di, [bp+6] ; point di to top left column
+   135 000000D1 8B7604                  				mov si, [bp+4] ; point si to string
+   136 000000D4 803C00                  				cmp [si],byte 0
+   137 000000D7 7412                    				je StringEnds
+   138                                  		nextchar: 
+   139 000000D9 8A04                    				mov al, [si] ; load next char of string
+   140 000000DB 268905                  				mov [es:di], ax ; show this char on screen
+   141 000000DE 81C70200                				add di, 2 ; move to next screen location
+   142 000000E2 81C60100                				add si, 1 ; move to next char in string
+   143 000000E6 803C00                  				cmp [si],byte 0
+   144 000000E9 7FEE                    				jg nextchar
+   145                                  		
+   146                                  		StringEnds:
+   147 000000EB 61                      				popa
+   148 000000EC 07                      				pop es
+   149 000000ED 5D                      				pop bp
+   150 000000EE C20800                  				ret 8
+   151                                   start: 
+   152                                  				
+   153 000000F1 BE0A00                  				mov si,10	;	length of a triangle
+   154 000000F4 BF0000                  				mov di,0	;	starting row number
+   155 000000F7 B91900                  				mov cx,25	;	numbers of rows in a screen
+   156 000000FA BB4E00                  				mov bx,78	;	column number
+   157 000000FD B02A                    				mov al,2Ah	;	the character we want to print to form triangle (asterics * )
+   158 000000FF B407                    				mov ah,07	;	default attribute
+   159                                  				
+   160 00000101 E8FFFE                  				call clrscr ; call the clrscr subroutine
+   161 00000104 D1EB                    				shr bx,1	;	bcz each contain two cell 
+   162 00000106 29F1                    				sub cx,si
+   163 00000108 81C10100                				add cx,1
+   164 0000010C B409                    				mov ah,1001b
+   165 0000010E BA0000                  				mov dx,0
+   166 00000111 81FE1A00                				cmp si,26
+   167 00000115 7D4C                    				jge InalidInput
+   168 00000117 81FE0000                				cmp si,0
+   169 0000011B 7E46                    				jle InalidInput
+   170                                  		Loop2:		
+   171                                  				
+   172 0000011D 50                      				push ax
+   173 0000011E 57                      				push di
+   174 0000011F 53                      				push bx		;column number	(starts from 0)
+   175 00000120 56                      				push si
+   176 00000121 E8FDFE                  				call print_triangle
+   177 00000124 81F90100                				cmp cx,1
+   178 00000128 7506                    				jne LargeDelay
+   179 0000012A 68F401                  				push 500
+   180 0000012D E90300                  				jmp callDelay
+   181                                  		LargeDelay:		
+   182 00000130 682003                  				push 800
+   183                                  		callDelay:
+   184 00000133 E875FF                  				call delay
+   185 00000136 81C70100                				add di,1
+   186 0000013A 80C401                  				add ah,1
+   187 0000013D 80FC0F                  				cmp ah,1111b
+   188 00000140 7502                    				jne l1
+   189 00000142 B401                    				mov ah,1
+   190                                  				
+   191                                  		l1:		
+   192 00000144 E8BCFE                  				call clrscr ; call the clrscr subroutine		
+   193 00000147 E2D4                    				loop Loop2
+   194 00000149 81FA0000                				cmp dx,0
+   195 0000014D 7506                    				jne l2 
+   196 0000014F B48A                    				mov ah,10001010b
+   197 00000151 81C20100                				add dx,1
+   198                                  		l2:		
+   199 00000155 81EF0100                				sub di,1
+   200 00000159 80FC90                  				cmp ah,10010000b
+   201 0000015C 7333                    				jae End
+   202                                  				
+   203 0000015E B90100                  				mov cx,1
+   204 00000161 EBBA                    				jmp Loop2
+   205                                  		InalidInput:
+   206 00000163 B8[9601]                				mov ax, message
+   207 00000166 B90400                  				mov cx,4
+   208                                  		
+   209                                  		PrintInvalidMessage:
+   210 00000169 688C00                  				push 10001100b
+   211 0000016C 68B207                  				push 1970
+   212 0000016F 50                      				push ax ; push address of message
+   213 00000170 E84EFF                  				call printstr ; call the printstr subroutine
+   214                                  
+   215 00000173 685802                  				push 600
+   216 00000176 E832FF                  				call delay
+   217                                  
+   218 00000179 E2EE                    				loop PrintInvalidMessage
+   219                                  				
+   220 0000017B E885FE                  				call clrscr
+   221                                  				
+   222 0000017E 680700                  				push 07
+   223 00000181 68B207                  				push 1970	;	2130
+   224 00000184 50                      				push ax
+   225 00000185 E839FF                  				call printstr ; call the printstr subroutine
+   226 00000188 68D007                  				push 2000
+   227 0000018B E81DFF                  				call delay
+   228 0000018E E872FE                  				call clrscr
+   229                                  		End:
+   230                                  				
+   231 00000191 B8004C                  				mov ax, 0x4c00 ; terminate program
+   232 00000194 CD21                    				int 0x21					
+   233                                  				
+   234 00000196 4C656E677468206F66-     				message: db "Length of triangle is not valid!",0 ; string to be printed
+   235 0000019F 20747269616E676C65-
+   236 000001A8 206973206E6F742076-
+   237 000001B1 616C69642100       

@@ -1,0 +1,86 @@
+     1                                   ; found an n bit pattern
+     2                                  				[org 0x0100]
+     3 00000000 E96B00                  				jmp Start
+     4                                   FindAPattern:
+     5                                  						
+     6 00000003 55                      				push bp
+     7 00000004 89E5                    				mov bp,sp
+     8 00000006 60                      				pusha
+     9 00000007 68[8900]                				push word num2
+    10 0000000A 68[8700]                				push word num1
+    11                                  				
+    12 0000000D 8B4E04                  				mov cx,[bp+4]
+    13 00000010 81F90000                				cmp cx,0
+    14 00000014 764B                    				jbe skip
+    15                                  				
+    16 00000016 BB0000                  				mov bx,0	; used for masking of given number
+    17 00000019 BA0000                  				mov dx,0	; used for masking of pattern
+    18                                  		Loop1:		
+    19 0000001C BE0300                  				mov si,3
+    20                                  				
+    21 0000001F D1EE                    				shr si,1
+    22 00000021 D1DB                    				rcr bx,1
+    23                                  				
+    24 00000023 D1EE                    				shr si,1
+    25 00000025 D1D2                    				rcl dx,1
+    26                                  				
+    27 00000027 E2F3                    				loop Loop1
+    28                                  				
+    29 00000029 235606                  				and dx,[bp+6]	; just copy the required pattern into dx
+    30                                  				
+    31                                  				; move the pattern on most significant bits
+    32 0000002C 8B4E04                  				mov cx,[bp+4]
+    33                                  		Loop2:
+    34 0000002F D1CA                    				ror dx,1
+    35 00000031 E2FC                    				loop Loop2
+    36                                  		
+    37                                  				; now pattern is like 1101 and junk of 12 bits
+    38 00000033 8916[8900]              				mov [num2],dx
+    39 00000037 B91000                  				mov cx,16
+    40 0000003A 2B4E04                  				sub cx,[bp+4]
+    41                                  		
+    42 0000003D 89DA                    				mov dx,bx
+    43                                  		Loop3:
+    44                                  				
+    45 0000003F 2316[8700]              				and dx,[num1]
+    46 00000043 3B16[8900]              				cmp dx,[num2]
+    47 00000047 740D                    				je Found
+    48                                  				
+    49 00000049 D10E[8900]              				ror word [num2],1
+    50 0000004D D1CB                    				ror bx,1
+    51 0000004F 89DA                    				mov dx,bx
+    52                                  				
+    53 00000051 E2EC                    				loop Loop3
+    54                                  				
+    55                                  				; it comes when pattern not found and it will jump to skip
+    56 00000053 E90B00                  				jmp skip
+    57                                  		Found:
+    58 00000056 BA1000                  				mov dx,16
+    59 00000059 2B5604                  				sub dx,[bp+4]
+    60 0000005C 29CA                    				sub dx,cx
+    61 0000005E 89560A                  				mov word[bp+10],dx
+    62                                  				
+    63                                  				
+    64                                  		skip:
+    65 00000061 8F06[8700]               				pop word [num1]
+    66 00000065 8F06[8900]              				pop word [num2]
+    67 00000069 61                      				popa
+    68 0000006A 5D                       				pop bp
+    69 0000006B C20600                   				ret 6
+    70                                  				
+    71                                   Start:
+    72 0000006E A1[8700]                				mov ax,[num1]
+    73 00000071 8B1E[8900]              				mov bx,[num2]
+    74 00000075 68FFFF                   				push -1
+    75 00000078 50                      				push ax
+    76 00000079 53                       				push bx
+    77 0000007A FF36[8B00]               				push word [len] ;length of pattern
+    78 0000007E E882FF                  				call FindAPattern
+    79 00000081 58                       				pop ax
+    80                                   				
+    81 00000082 B8004C                  				mov ax,0x4c00
+    82 00000085 CD21                     				int 0x21
+    83                                  				
+    84 00000087 0AEF                    				num1:	dw 1110111100001010b
+    85 00000089 3C00                    				num2:	dw  111100b 
+    86 0000008B 0600                    				len:	dw 6
